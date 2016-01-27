@@ -18,6 +18,12 @@ import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.modules.camera.CameraRollManager;
+<<<<<<< a7479064907fcfdcfaf20c4ee97dd5f05b4e193e
+=======
+import com.facebook.react.modules.camera.ImageEditingManager;
+import com.facebook.react.modules.camera.ImageStoreManager;
+import com.facebook.react.modules.clipboard.ClipboardModule;
+>>>>>>> Open sourced <ImageEditor>, <ImageStore> for Android
 import com.facebook.react.modules.dialog.DialogModule;
 import com.facebook.react.modules.fresco.FrescoModule;
 import com.facebook.react.modules.intent.IntentModule;
@@ -66,6 +72,8 @@ public class MainReactPackage implements ReactPackage {
       new ClipboardModule(reactContext),
       new DialogModule(reactContext),
       new FrescoModule(reactContext),
+      new ImageEditingManager(reactContext),
+      new ImageStoreManager(reactContext),
       new IntentModule(reactContext),
       new LocationModule(reactContext),
       new NetworkingModule(reactContext),
