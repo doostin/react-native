@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import java.io.Reader;
 
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,13 @@ import com.squareup.okhttp.Response;
 import com.squareup.okhttp.ResponseBody;
 
 import static java.lang.Math.min;
+
+import java.security.cert.CertificateFactory;
+import java.security.cert.Certificate;
+import java.security.KeyStore;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Implements the XMLHttpRequest JavaScript interface.
@@ -142,6 +150,39 @@ public final class NetworkingModule extends ReactContextBaseJavaModule {
       client.setReadTimeout(timeout, TimeUnit.MILLISECONDS);
     }
 
+	// MODIFICATION FOR EDG PURPOSES
+	if (url.toLowerCase().contains("social.usx.io")) {
+		try {
+			// loading CAs from an InputStream
+			CertificateFactory cf = CertificateFactory.getInstance("X.509");
+			String certString = "-----BEGIN CERTIFICATE-----\nMIIEmzCCA4OgAwIBAgIDA96lMA0GCSqGSIb3DQEBCwUAMEcxCzAJBgNVBAYTAlVT\nMRYwFAYDVQQKEw1HZW9UcnVzdCBJbmMuMSAwHgYDVQQDExdSYXBpZFNTTCBTSEEy\nNTYgQ0EgLSBHMzAeFw0xNTA0MjEwNTQzNTZaFw0xNjA0MjMwNzQwNDhaMIGMMRMw\nEQYDVQQLEwpHVDU2MDY0NjIxMTEwLwYDVQQLEyhTZWUgd3d3LnJhcGlkc3NsLmNv\nbS9yZXNvdXJjZXMvY3BzIChjKTE1MS8wLQYDVQQLEyZEb21haW4gQ29udHJvbCBW\nYWxpZGF0ZWQgLSBSYXBpZFNTTChSKTERMA8GA1UEAwwIKi51c3guaW8wggEiMA0G\nCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDJaJY5hjxaxJpgUFQalE+P4GIOCs6x\n9UsBuJBMDA4/XrlxMRz5xsQnpHo7tSnsyMMefsMrcjt5ng9AAPK5wbOKjjKJj416\n5LzkYSo8lYW4zYEqqvPJSzDJ3mHMUMIfSyIatGKeO9FD2lsgC1d1jaiqUGMSO+qL\nhFaamAXlqOXHFue3imfPsrn4+BWEtYY/kFaVbrdfntpw9+ZHfTQfJH/J6IJ6Z09a\nQcmTT3i0yMqUa8NSOt4nNaKp6rSZbTWZp7YBjF/PtIC952fnwl3rPZ3Gf8xLbBw3\noyeBOn7ySEwmsyCAM8yjZvftMcYgf/Uu87OY9gWzHI6LSBwOCq1E32UpAgMBAAGj\nggFIMIIBRDAfBgNVHSMEGDAWgBTDnPP800YINLvORn+gfFvz4gjLWTBXBggrBgEF\nBQcBAQRLMEkwHwYIKwYBBQUHMAGGE2h0dHA6Ly9ndi5zeW1jZC5jb20wJgYIKwYB\nBQUHMAKGGmh0dHA6Ly9ndi5zeW1jYi5jb20vZ3YuY3J0MA4GA1UdDwEB/wQEAwIF\noDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwGwYDVR0RBBQwEoIIKi51\nc3guaW+CBnVzeC5pbzArBgNVHR8EJDAiMCCgHqAchhpodHRwOi8vZ3Yuc3ltY2Iu\nY29tL2d2LmNybDAMBgNVHRMBAf8EAjAAMEEGA1UdIAQ6MDgwNgYGZ4EMAQIBMCww\nKgYIKwYBBQUHAgEWHmh0dHBzOi8vd3d3LnJhcGlkc3NsLmNvbS9sZWdhbDANBgkq\nhkiG9w0BAQsFAAOCAQEAOvM7I37ISNH7dg9MMzkfZZhMveyz5gHrCbffqi2eDvhu\nHWjxZ571mjHRF+XcHMXwoVvsSa5bycbQHAu3lknEfo7BXchFvKzfNu4IMg6WV8sj\nNKEEHL8L5Pa+njQMuGE0245t5QwAiZ1GuEL2xeYV/c+jVkFJvWB7QTFMVYbKO9Am\nmrw+itN7AFRADzNmqWRRB2D3kyHxoh1DmC3IQA11Nt/PTRzUmYetOaoFLPR+sE2i\ndEUxfgOuz9dweNYT4c2GI84qJRzUa1ZgZ8Uz16X3BpLOGxWHSGgM+KlUoHjZt1Eu\n8ji5H7tGfo8xZDnmlV+CPCeEnGrXk7FCXoAUNP5BLA==\n-----END CERTIFICATE-----";
+			InputStream cert = new ByteArrayInputStream(certString.getBytes(StandardCharsets.UTF_8));
+			Certificate ca;
+			try {
+				ca = cf.generateCertificate(cert);
+			} finally {
+				cert.close();
+			}
+
+			// creating a KeyStore containing our trusted CAs
+			String keyStoreType = KeyStore.getDefaultType();
+			KeyStore keyStore = KeyStore.getInstance(keyStoreType);
+			keyStore.load(null, null);
+			keyStore.setCertificateEntry("ca", ca);
+
+			// creating a TrustManager that trusts the CAs in our KeyStore
+			String tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
+			TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
+			tmf.init(keyStore);
+
+			// creating an SSLSocketFactory that uses our TrustManager
+			SSLContext sslContext = SSLContext.getInstance("TLS");
+			sslContext.init(null, tmf.getTrustManagers(), null);
+			client.setSslSocketFactory(sslContext.getSocketFactory());
+		} catch (Exception ignore) {}
+	}
+	// END MODIFICATION FOR EDG PURPOSES
+	
     Headers requestHeaders = extractHeaders(headers, data);
     if (requestHeaders == null) {
       onRequestError(requestId, "Unrecognized headers format");
